@@ -1,46 +1,31 @@
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-/**
- * This class is thread safe.
- */
+import java.nio.file.Files;
+
 public class Parser {
-  private File file;
-  public synchronized void setFile(File f) {
-    file = f;
+
+  private final File file;
+
+  public Parser(File file) {
+    this.file = file;
   }
-  public synchronized File getFile() {
-    return file;
-  }
+
   public String getContent() throws IOException {
-    FileInputStream i = new FileInputStream(file);
-    String output = "";
-    int data;
-    while ((data = i.read()) > 0) {
-      output += (char) data;
-    }
-    return output;
+    return Files.readString(file.toPath());
   }
+
   public String getContentWithoutUnicode() throws IOException {
-    FileInputStream i = new FileInputStream(file);
-    String output = "";
-    int data;
-    while ((data = i.read()) > 0) {
-      if (data < 0x80) {
-        output += (char) data;
-      }
-    }
-    return output;
+    return nonAsciiCharactersRemoved(getContent());
   }
-  public void saveContent(String content) {
-    FileOutputStream o = new FileOutputStream(file);
-    try {
-      for (int i = 0; i < content.length(); i += 1) {
-        o.write(content.charAt(i));
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+
+  private String nonAsciiCharactersRemoved(String content) {
+    return content.codePoints().filter(cp -> cp < 0x80)
+        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+        .toString();
   }
+
+  public void setContent(String content) throws IOException {
+    Files.writeString(file.toPath(), content);
+  }
+
 }
